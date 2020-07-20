@@ -1,0 +1,55 @@
+version: '1.0'
+services:
+  - name: db
+    type: mariadb
+    version: 10.4
+    configuration: StandAlone
+    database: suitecrm
+    username: suitecrm
+    userPassword: null
+    password: null
+    ports:
+      - 3306
+    remoteAccess: false
+    comments:
+      userPassword: Password for user "suitecrm"
+    deployTo:
+      - suitecrm
+
+  - name: suitecrm
+    type: docker
+    image: docker.io/bitnami/suitecrm
+    version: 7-debian-10
+    ports:
+      - 80
+    remoteAccess: false
+    env:
+      MARIADB_HOST: "{{=service('db').getMasterAlias()}}"
+      MARIADB_PORT_NUMBER: "{{=service('db').getMainPort()}}"
+      SUITECRM_DATABASE_USER: "{{=service('db').get('username')}}"
+      SUITECRM_DATABASE_NAME: "{{=service('db').get('database')}}"
+      SUITECRM_DATABASE_PASSWORD: "{{=service('db').get('userPassword')}}"
+      SUITECRM_USERNAME: null
+      SUITECRM_PASSWORD: null
+    volumes:
+      - directory: /bitnami
+    deployTo:
+      - suitecrm
+
+  - name: web
+    type: nginx
+    version: 1.17
+    ports:
+      - 80
+      - 443
+    remoteAccess: true
+    serviceFiles:
+      - name: suitecrm
+    deployTo:
+      - suitecrm
+
+hosts:
+  - name: suitecrm
+    requirements:
+      cores: 1
+      memory: 1
